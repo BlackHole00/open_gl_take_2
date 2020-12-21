@@ -140,9 +140,9 @@ pub fn main() {
             material.set_float_uniform("position_x", position);
             material.set_float_uniform("position_y", position);
             globj.draw(6);
-            /*material.set_float_uniform("position_x", position);
+            material.set_float_uniform("position_x", position);
             material.set_float_uniform("position_y", -position);
-            globj.draw(6);
+            globj.draw(6);/*
             material.set_float_uniform("position_x", -position);
             material.set_float_uniform("position_y", position);
             globj.draw(6);
