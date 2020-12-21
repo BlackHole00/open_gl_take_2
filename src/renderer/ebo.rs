@@ -1,9 +1,18 @@
+/*  File: renderer/ebo.rs
+*   Author: Vicix
+*
+*   This file contains the Ebo class .
+*   The class Ebo is a simple abstaction of the opengl ebo. 
+*/
 extern crate gl;
 use self::gl::types::*;
 
 use std::ffi::c_void;
 use std::mem;
 
+/*  The declaration of the class.
+*   The only thing we need is the ebo id.
+*/
 #[derive(Debug, Clone)]
 pub struct Ebo {
     ebo_id: GLuint,
@@ -11,6 +20,9 @@ pub struct Ebo {
 
 #[allow(dead_code)]
 impl Ebo {
+    /*  The constructor of the class.
+    *   It generates a ebo and saves the id.
+    */
     pub fn new() -> Ebo {
         let mut ebo = 1;
         unsafe {
@@ -23,12 +35,16 @@ impl Ebo {
         }
     }
 
+    /*  A simple function to bind the buffer.
+    */
     pub fn bind(&self) {
         unsafe {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.ebo_id);
         }
     }
 
+    /*  A simple function to add the data to the buffer.
+    */
     pub fn add_data<T>(&self, data_element_number: usize, data_pointer: *const c_void, draw_mode: GLenum) {
         self.bind();
 

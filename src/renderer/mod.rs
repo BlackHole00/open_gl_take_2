@@ -1,3 +1,7 @@
+/*  File: renderer/mod.rs
+*   Author: Vicix
+*/
+
 pub mod shader;
 pub mod texture;
 pub mod vao;

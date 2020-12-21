@@ -1,3 +1,10 @@
+/*  File: main.rs
+*   Author: Vicix
+*
+*   This is the main file of this project.
+*   This is mainly used as testground. It will be poorly commented.
+*/
+
 extern crate glfw;
 use self::glfw::{Context, Key, Action};
 
