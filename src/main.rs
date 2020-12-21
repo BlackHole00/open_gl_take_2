@@ -1,9 +1,3 @@
-/*  File: main.rs
-*   Author: Vicix
-*
-*   This is the main file of this project.
-*   This is mainly used as testground. It will be poorly commented.
-*/
 extern crate glfw;
 use self::glfw::{Context, Key, Action};
 
@@ -11,6 +5,7 @@ extern crate gl;
 use self::gl::types::*;
 
 use std::sync::mpsc::Receiver;
+use std::os::raw::c_void;
 use std::ffi::CStr;
 
 mod renderer;
@@ -20,8 +15,6 @@ use crate::renderer::texture;
 use crate::renderer::constants;
 use crate::renderer::globject;
 use crate::renderer::material;
-use crate::renderer::smartvbo;
-use crate::renderer::smartebo;
 
 // settings
 const SCR_WIDTH: u32 = 600;
@@ -58,60 +51,52 @@ pub fn main() {
         gl::GetIntegerv(gl::MAX_VERTEX_ATTRIBS, &mut nr_attributes);
         println!("Maximum nr of vertex attributes supported: {}", nr_attributes);
     }
-    
-    
-    let shader = shader::Shader::new("./src/shaders/vert.glsl", "./src/shaders/frag.glsl");
-    
-    //I should make this a macro...
-    //I create a smart vbo and set the vertecies data.
-    let mut smart_vbo = smartvbo::SmartVbo::<GLfloat>::new();
-    smart_vbo.push_data(-0.5); smart_vbo.push_data( 0.7); smart_vbo.push_data(0.0); smart_vbo.push_data(1.0);
-    smart_vbo.push_data( 0.5); smart_vbo.push_data( 0.7); smart_vbo.push_data(1.0); smart_vbo.push_data(1.0);
-    smart_vbo.push_data( 0.0); smart_vbo.push_data( 0.0); smart_vbo.push_data(0.5); smart_vbo.push_data(0.5);
-    smart_vbo.push_data(-0.5); smart_vbo.push_data(-0.7); smart_vbo.push_data(0.0); smart_vbo.push_data(0.0);
-    smart_vbo.push_data( 0.5); smart_vbo.push_data(-0.7); smart_vbo.push_data(1.0); smart_vbo.push_data(0.0);
-    //Then we send the data to the cpu
-    smart_vbo.write_data(gl::STATIC_DRAW);
-    //And we create a globject using it.
-    let mut globj = globject::GlObject::from_vbo(smart_vbo.as_vbo_ref());
-    
-    //Here we create a smart ebo 
-    let mut smart_ebo = smartebo::SmartEbo::<GLuint>::new(globj.as_vao_ref());
-    //and add the vertices.
-    smart_ebo.push_data(0); smart_ebo.push_data(1); smart_ebo.push_data(2);
-    smart_ebo.push_data(2); smart_ebo.push_data(4); smart_ebo.push_data(3); 
-    smart_ebo.write_data(gl::STATIC_DRAW);
-    //and we link the ebo with the globj
-    globj.link_ebo(smart_ebo.as_ebo_ref());
-    
-    //Then we need to push a layout element
+
+
+    let vertices: [f32; 20] = [
+        -0.5,  0.7,  0.0,  1.0,
+         0.5,  0.7,  1.0,  1.0,
+         0.0,  0.0,  0.5,  0.5,
+        -0.5, -0.7,  0.0,  0.0,
+         0.5, -0.7,  1.0,  0.0,
+    ];
+
+    let indices = [
+        0, 1, 2,
+        2, 4, 3,
+    ];
+
+    let shader = shader::Shader::new("./src/shaders/vert2.glsl", "./src/shaders/frag2.glsl");
+
+    let mut globj = globject::GlObject::new();
+    globj.add_vertex_data::<GLfloat>(vertices.len(), &vertices[0] as *const f32 as *const c_void, gl::STATIC_DRAW);
+    globj.add_index_data::<GLint>(indices.len(), &indices[0] as *const i32 as *const c_void, gl::STATIC_DRAW);
     globj.push_layout_element(gl::FLOAT, gl::FALSE, 2);
     globj.push_layout_element(gl::FLOAT, gl::FALSE, 2);
-    //And set the draw property
     globj.set_property(constants::DRAW_MODE_PROPERTY, gl::TRIANGLES);
     globj.set_property(constants::EBO_TYPE_PROPERTY, gl::UNSIGNED_INT);
-    //And write the layout
     globj.write_layout();
 
-    //Here we create the textures from file and set the property
     let mut texture1 = texture::Texture::new(gl::TEXTURE_2D, "./src/resources/wall.jpg", gl::RGB, gl::RGB, 0);
     texture1.set_gl_property(gl::TEXTURE_MAG_FILTER, gl::LINEAR);
     texture1.set_gl_property(gl::TEXTURE_MIN_FILTER, gl::LINEAR);
     texture1.gen_texture();
+
     let mut texture2 = texture::Texture::new(gl::TEXTURE_2D, "./src/resources/awesomeface.png", gl::RGB, gl::RGBA, 1);
     texture2.set_gl_property(gl::TEXTURE_MAG_FILTER, gl::LINEAR);
     texture2.set_gl_property(gl::TEXTURE_MIN_FILTER, gl::LINEAR);
     texture2.set_image_property(constants::FLIP_V_PROPERTY, 1);
     texture2.gen_texture();
+
     let mut texture3 = texture::Texture::new(gl::TEXTURE_2D, "./src/resources/cat.jpeg", gl::RGB, gl::RGB, 2);
     texture3.set_image_property(constants::FLIP_V_PROPERTY, 1);
     texture3.gen_texture();
 
-    //Then we link the shader and the textures to a material.
     let mut material = material::Material::new(&shader);
     material.push_texture(&texture1, "texture1");
     material.push_texture(&texture2, "texture2");
     material.push_texture(&texture3, "texture3");
+
 
     let mut position = 0.5;
     let mut mode = true;
@@ -137,42 +122,10 @@ pub fn main() {
             }
 
             material.bind();
-            material.set_float_uniform("position_x", position);
-            material.set_float_uniform("position_y", position);
+            material.set_float_uniform("position", position);
             globj.draw(6);
-            material.set_float_uniform("position_x", position);
-            material.set_float_uniform("position_y", -position);
-            globj.draw(6);/*
-            material.set_float_uniform("position_x", -position);
-            material.set_float_uniform("position_y", position);
+            material.set_float_uniform("position", -position);
             globj.draw(6);
-            material.set_float_uniform("position_x", -position);
-            material.set_float_uniform("position_y", -position);
-            globj.draw(6);
-            
-            material.set_float_uniform("position_x", position / 2.0);
-            material.set_float_uniform("position_y", position / 2.0);
-            globj.draw(6);
-            material.set_float_uniform("position_x", position / 2.0);
-            material.set_float_uniform("position_y", -position / 2.0);
-            globj.draw(6);
-            material.set_float_uniform("position_x", -position / 2.0);
-            material.set_float_uniform("position_y", position / 2.0);
-            globj.draw(6);
-            material.set_float_uniform("position_x", -position / 2.0);
-            material.set_float_uniform("position_y", -position / 2.0);
-            globj.draw(6);
-
-            material.set_float_uniform("position_x", position);
-            material.set_float_uniform("position_y", 0.0);
-            globj.draw(6);
-            material.set_float_uniform("position_x", -position);
-            globj.draw(6);
-            material.set_float_uniform("position_x", 0.0);
-            material.set_float_uniform("position_y", position);
-            globj.draw(6);
-            material.set_float_uniform("position_y", -position);
-            globj.draw(6);*/
         }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -182,7 +135,7 @@ pub fn main() {
     }
 }
 
-//Event Processing
+// NOTE: not the same version as in common.rs!
 fn process_events(window: &mut glfw::Window, events: &Receiver<(f64, glfw::WindowEvent)>) {
     for (_, event) in glfw::flush_messages(events) {
         match event {

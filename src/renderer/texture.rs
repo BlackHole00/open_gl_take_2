@@ -1,11 +1,3 @@
-/*  File: renderer/texture.rs
-*   Author: Vicix
-*
-*   This file contains the Texture class.
-*   The class Shader is a simple abstaction of the opengl texture. 
-*   It helps creating textures from files and to create uniforms.
-*/
-
 extern crate gl;
 use self::gl::types::*;
 
@@ -17,10 +9,6 @@ use image::GenericImage;
 use crate::renderer::shader::Shader;
 use crate::renderer::constants;
 
-/*  This is the declaration on the class.
-*   It contains the texture_id (the only this that is strictly necessary).
-*   It also contains the opengl texture properties an the image properties.
-*/
 #[derive(Debug, Clone)]
 pub struct Texture {
     texture_id: GLuint,
@@ -30,11 +18,6 @@ pub struct Texture {
 
 #[allow(dead_code)]
 impl Texture {
-    /*  This is the constructor of the class.
-    *   It takes the texture type, the image path the internal format, the normal format and the active texture number.
-    *   It also create an opengl texture.
-    *   Note: The default uniform name is set to the image path.
-    */
     pub fn new(texture_type: GLenum, image_path: &str, internal_format: GLenum, format: GLenum, active_texture_number: GLuint) -> Texture {
         let texture_id = unsafe {
             let mut texture_id = 1;
@@ -65,9 +48,6 @@ impl Texture {
         }
     }
 
-    /*  This function is used to set the texture parameters, to open the image from the path and to give the texture to opengl
-    *   It also checks if the texture should be flipped.
-    */
     pub fn gen_texture(&self) {
         unsafe {
             gl::BindTexture(self.gl_properties.texture_type, self.texture_id);
@@ -89,13 +69,9 @@ impl Texture {
         }
     }
 
-    /*  This function is used to set a opengl property in the gl_properties struct inside the class.
-    *   It takes the property_id that is a constant defined in renderer::constants and the value to set.
-    *   It matches the property_id and sets the right property.
-    *   ***I should really find a more dynamic way to set the property maybe using an array... idk...***
-    */
-    pub fn set_gl_property(&mut self, property_id: GLenum, value: GLenum) {
-        match property_id {
+    pub fn set_gl_property(&mut self, property: GLenum, value: GLenum) {
+        //Awful and wrong way do do this... I'll change this later.
+        match property {
             gl::TEXTURE_WRAP_S => self.gl_properties.texture_warp_s = value,
             gl::TEXTURE_WRAP_T => self.gl_properties.texture_warp_t = value,
             gl::TEXTURE_MIN_FILTER => self.gl_properties.texture_min_filter = value,
@@ -104,14 +80,36 @@ impl Texture {
         }
     }
 
-    /*  This function is used to set a image property in the image_properties struct inside the class.
-    *   It takes the property_id that is a constant defined in renderer::constants and the value to set.
-    *   It matches the property_id and sets the right property.
-    *   ***I should really find a more dynamic way to set the property maybe using an array... idk...***
-    */
+    pub fn set_texture_type(&mut self, texture_type: GLenum) {
+        self.gl_properties.texture_type = texture_type;
+    }
+
+    pub fn set_active_texture_number(&mut self, active_texture_number: GLuint) {
+        self.gl_properties.active_texture_number = active_texture_number;
+    }
+    
+    pub fn set_uniform_name(&mut self, uniform_name: &str) {
+        self.gl_properties.texture_uniform_name = uniform_name.to_string();
+    }
+
+    pub fn create_uniform_from_name(&mut self, shader: &Shader, uniform_name: &str) {
+        self.set_uniform_name(uniform_name);
+        self.create_uniform(shader);
+    }
+
+    pub fn create_uniform(&self, shader: &Shader) {
+        shader.set_int_uniform(self.gl_properties.texture_uniform_name.as_str(), self.gl_properties.active_texture_number as i32)
+    }
+
+    pub fn generate_mipmap(&self) {
+        unsafe {
+            gl::GenerateMipmap(self.gl_properties.texture_type);
+        }
+    }
+
     pub fn set_image_property(&mut self, property_id: u8, property: GLenum) {
         match property_id {
-            constants::FLIP_H_PROPERTY => self.image_properties.fliph = property != 0,
+            constants::FLIP_H_PROPERTY => self.image_properties.fliph = property != 0, //weird cast to bool because rust
             constants::FLIP_V_PROPERTY => self.image_properties.flipv = property != 0,
             constants::INTERNAL_FORMAT_PROPERTY => self.image_properties.internal_format = property,
             constants::FORMAT_PROPERTY => self.image_properties.format = property,
@@ -119,48 +117,6 @@ impl Texture {
         }
     }
 
-    /*  This is a simple function used to set the type of texture.
-    */
-    pub fn set_texture_type(&mut self, texture_type: GLenum) {
-        self.gl_properties.texture_type = texture_type;
-    }
-
-    /*  This is a simple function used to set the active texture number.
-    */
-    pub fn set_active_texture_number(&mut self, active_texture_number: GLuint) {
-        self.gl_properties.active_texture_number = active_texture_number;
-    }
-
-    /*  This is a simple function used to set the uniform name.
-    */
-    pub fn set_uniform_name(&mut self, uniform_name: &str) {
-        self.gl_properties.texture_uniform_name = uniform_name.to_string();
-    }
-
-    /*  This is a simple function used create an uniform in the shader using a uniform_name.
-    *   This function is basically the set_uniform_name and create_uniform functions conbined.
-    */
-    pub fn create_uniform_from_name(&mut self, shader: &Shader, uniform_name: &str) {
-        self.set_uniform_name(uniform_name);
-        self.create_uniform(shader);
-    }
-
-    /*  This is a simple function used to set a uniform.
-    */
-    pub fn create_uniform(&self, shader: &Shader) {
-        shader.set_int_uniform(self.gl_properties.texture_uniform_name.as_str(), self.gl_properties.active_texture_number as i32)
-    }
-
-    /*  This is a simple function used to generate the mipmap.
-    */
-    pub fn generate_mipmap(&self) {
-        unsafe {
-            gl::GenerateMipmap(self.gl_properties.texture_type);
-        }
-    }
-
-    /*  This is a simple function used to bind the texture to the right active texture.
-    */
     pub fn bind(&self) {
         unsafe {
             match self.gl_properties.active_texture_number {
@@ -190,9 +146,6 @@ impl Texture {
     }
 }
 
-/*  This struct contains the opengl properties.
-*   ***I should find a more modular system***
-*/
 #[derive(Debug, Clone)]
 struct GlProperties {
     active_texture_number: GLuint,
@@ -204,9 +157,6 @@ struct GlProperties {
     texture_uniform_name: String,
 }
 
-/*  This struct contains the image properties.
-*   ***I should find a more modular system***
-*/
 #[derive(Debug, Clone)]
 struct ImageProperties {
     path: String,

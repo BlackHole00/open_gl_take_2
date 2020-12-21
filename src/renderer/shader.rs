@@ -1,11 +1,3 @@
-/*  File: renderer/shader.rs
-*   Author: Vicix
-*
-*   This file contains the Shader class .
-*   The class Shader is a simple abstaction of the opengl shader. 
-*   It helps creating shaders from files and to create uniforms.
-*/
-
 extern crate gl;
 use self::gl::types::*;
 
@@ -15,10 +7,6 @@ use std::str;
 use std::fs::File;
 use std::io::Read;
 
-/*  This is the declaration of the Shader Class.
-*   In order to make this work we only need the program id.
-*   All the other information are stored in the gpu.
-*/
 #[derive(Debug, Clone)]
 pub struct Shader {
     program_id: GLuint,
@@ -26,10 +14,6 @@ pub struct Shader {
 
 #[allow(dead_code)]
 impl Shader {
-    /*  The constructor of the class.
-    *   It takes the path to the vertex shader and the path to the fragment path.
-    *   It automatically parses, compile and link the shaders. It puts the error log in the console if there is a error in the shader's code.
-    */
     pub fn new(vertex_path: &str, fragment_path: &str) -> Shader {
         let mut v_shader_file = File::open(vertex_path)
             .unwrap_or_else(|_| panic!("Failed to open {}", vertex_path));
@@ -82,16 +66,12 @@ impl Shader {
         }
     }
 
-    /*  This is a simple function that binds the shader
-    */
     pub fn bind(&self) {
         unsafe {
             gl::UseProgram(self.program_id);
         }
     }
 
-    /*  This is a simple function that takes an uniform name and vaue and makes a boolean uniform.
-    */
     pub fn set_bool_uniform(&self, uniform_name: &str, uniform_value: bool) {
         unsafe {
             self.bind();
@@ -100,8 +80,6 @@ impl Shader {
         }
     }
 
-    /*  This is a simple function that takes an uniform name and vaue and makes an integer uniform.
-    */
     pub fn set_int_uniform(&self, uniform_name: &str, uniform_value: i32) {
         unsafe {
             self.bind();
@@ -110,8 +88,6 @@ impl Shader {
         }
     }
 
-    /*  This is a simple function that takes an uniform name and vaue and makes a float uniform.
-    */
     pub fn set_float_uniform(&self, uniform_name: &str, uniform_value: f32) {
         unsafe {
             self.bind();
