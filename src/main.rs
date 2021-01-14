@@ -14,17 +14,15 @@ use self::gl::types::*;
 use std::sync::mpsc::Receiver;
 use std::os::raw::c_void;
 use std::ffi::CStr;
+use std::time::Instant;
 
 mod renderer;
 
-use crate::renderer::traits::vboTrait::VboTrait;
 use crate::renderer::traits::vaoTrait::{VaoTrait, VaoLayoutTrait};
 use crate::renderer::traits::eboTrait::{EboTrait, OptionalEboTrait};
+use crate::renderer::traits::shaderTrait::ShaderTrait;
+use crate::renderer::traits::textureTrait::TextureTrait;
 use crate::renderer::traits::glObjectTrait::GlObjectTrait;
-
-use crate::renderer::vao::Vao;
-use crate::renderer::vbo::Vbo;
-use crate::renderer::ebo::Ebo;
 
 use crate::renderer::shader;
 use crate::renderer::texture;
@@ -40,6 +38,7 @@ const SCR_HEIGHT: u32 = 600;
 pub fn main() {
     // glfw: initialize and configure
     // ------------------------------
+    let mut timer = Instant::now();
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
     
     glfw.window_hint(glfw::WindowHint::ContextVersion(3, 3));
@@ -88,6 +87,7 @@ pub fn main() {
     ];
 
     let shader = shader::Shader::new("./src/shaders/vert2.glsl", "./src/shaders/frag2.glsl");
+    let albedo_shader = shader::Shader::new("./src/shaders/albedo_vert.glsl", "./src/shaders/albedo_frag.glsl");
 
     let mut globj = globject::GlObject::with_ebo();
     globj.add_vertex_data::<GLfloat>(vertices.len(), &vertices[0] as *const f32 as *const c_void, gl::STATIC_DRAW);
@@ -142,19 +142,30 @@ pub fn main() {
             gl::ClearColor(0.2, 0.5, 0.8, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT);
 
+            let delta: f32 = 1.0/(timer.elapsed().as_nanos() as f32);
+            timer = Instant::now();
+
+            //println!("{}", delta);
+
             if mode {
-                position += 0.0001;
+                position += 10.0 * delta;
             } else {
-                position -= 0.0001;
+                position -= 10.0 * delta;
             }
             if position >= 1.0 || position <= -1.0 {
                 mode = !mode;
             }
 
+
             material.bind();
             material.set_float_uniform("position", position);
             globj.draw(6);
-            material.set_float_uniform("position", -position);
+            //material.set_float_uniform("position", -position);
+            albedo_shader.bind();
+            albedo_shader.set_float_uniform("xpos",  0.0);
+            albedo_shader.set_float_uniform("ypos",  position);
+            albedo_shader.set_float_uniform("zpos",  0.0);
+            albedo_shader.set_3float_uniform("color", 1.0, 0.0, 0.0);
             globj2.draw(6);
         }
 
@@ -165,7 +176,7 @@ pub fn main() {
     }
 }
 
-// NOTE: not the same version as in common.rs!
+
 fn process_events(window: &mut glfw::Window, events: &Receiver<(f64, glfw::WindowEvent)>) {
     for (_, event) in glfw::flush_messages(events) {
         match event {
@@ -175,6 +186,12 @@ fn process_events(window: &mut glfw::Window, events: &Receiver<(f64, glfw::Windo
                 unsafe { gl::Viewport(0, 0, width, height) }
             }
             glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => window.set_should_close(true),
+            glfw::WindowEvent::Key(Key::Tab, _, Action::Press, _) => unsafe {
+                gl::PolygonMode( gl::FRONT_AND_BACK, gl::LINE );
+            }
+            glfw::WindowEvent::Key(Key::Tab, _, Action::Release, _) => unsafe {
+                gl::PolygonMode( gl::FRONT_AND_BACK, gl::FILL );
+            }
             _ => {}
         }
     }

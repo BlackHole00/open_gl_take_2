@@ -5,8 +5,13 @@
 *   Material holds a Shader and an array of textures. 
 *   It makes easier to apply textures and shaders.
 */
+extern crate gl;
+use self::gl::types::*;
+
 use crate::renderer::shader;
 use crate::renderer::texture;
+use crate::renderer::traits::shaderTrait::ShaderTrait;
+use crate::renderer::traits::textureTrait::TextureTrait;
 
 /*  This is the declaration of the class.
 *   It holds an array of textures. 
@@ -50,11 +55,11 @@ impl Material {
     pub fn bind(&mut self) {
         self.shader.bind();
         
-        for (texture, uniform_name, binded) in &mut self.textures {
+        for (texture, uniform_name, bound) in &mut self.textures {
             texture.bind();
-            if !*binded {
+            if !*bound {
                 texture.create_uniform_from_name(&self.shader, &uniform_name.as_str());
-                *binded = true;
+                *bound = true;
             }
         }
     }

@@ -17,6 +17,8 @@ pub trait VboTrait {
         }
     }
 
+    /*  A simple function to add the data to the buffer.
+    */
     fn add_vbo_data<T>(&self, data_element_number: usize, data_pointer: *const c_void, draw_mode: GLenum) {
         self.bind_vbo();
 

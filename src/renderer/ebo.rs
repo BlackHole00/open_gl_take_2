@@ -18,6 +18,7 @@ pub struct Ebo {
     ebo_id: GLuint,
 }
 
+#[allow(dead_code)]
 impl Ebo {
     pub fn new() -> Ebo {
         let mut ebo = 1;

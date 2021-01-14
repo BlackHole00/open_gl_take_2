@@ -9,6 +9,8 @@ use std::ffi::c_void;
 pub trait VaoTrait {
     fn get_vao_id(&self) -> u32;
 
+    /*  This is a simple function to bind the vao.
+    */
     fn bind_vao(&self) {
         unsafe {
             gl::BindVertexArray(self.get_vao_id());
@@ -18,9 +20,11 @@ pub trait VaoTrait {
 
 pub trait VaoLayoutTrait: VaoTrait {
     fn get_layout_ref(&self) -> &Vec::<VaoLayoutElement>;
-
     fn get_mut_layout_ref(&mut self) -> &mut Vec::<VaoLayoutElement>;
 
+    /*  This function is used to push a vao layout element in the vector.
+    *   It trows an error if we exceeded the maximum number of vertex attributes.
+    */
     fn push_layout_element(&mut self, element_type: GLenum, normalized: GLboolean, element_count: GLint) {
         let layout: &mut Vec::<VaoLayoutElement> = self.get_mut_layout_ref();
         
@@ -41,6 +45,11 @@ pub trait VaoLayoutTrait: VaoTrait {
         }
     }
 
+    /*  This function is similar to the push_layout_element.
+    *   This function lets you set a layout element in the vector using an indices.
+    *   If we set a element in a not already used vector location we need to push "bummy elements" in the vector (with the used flag set to false).
+    *   We do this so we can later use the vector index as Vertex attrib array id.
+    */
     fn set_layout_element(&mut self, element_type: GLenum, normalized: GLboolean, element_count: GLint, attrb_array_number: usize) {
         let layout: &mut Vec::<VaoLayoutElement> = self.get_mut_layout_ref();
         
@@ -76,18 +85,27 @@ pub trait VaoLayoutTrait: VaoTrait {
         }
     }
 
+    /*  This function is used to pop the last element from the vector
+    */
     fn pop_layout_element(&mut self) {
         let layout: &mut Vec::<VaoLayoutElement> = self.get_mut_layout_ref();
 
         layout.pop();
     }
 
+    /*  This function is used to clear the vector
+    */
     fn clear_layout(&mut self) {
         let layout: &mut Vec::<VaoLayoutElement> = self.get_mut_layout_ref();
 
         *layout = Vec::<VaoLayoutElement>::new();
     }
 
+    /*  This function is used to tell to opengl the vertex attrib array
+    *   First we need to calculate the stride and temporarly set the offset to the stride.
+    *   Then for each used (with the used element set to true) element of the vector, starting from the end we refresh the offset, subreacting the size of the current element.
+    *   Then we set the Attrib pointer array and enable it using the element pointer.
+    */
     fn write_layout(&self) {
         let layout: &Vec::<VaoLayoutElement> = self.get_layout_ref();
 

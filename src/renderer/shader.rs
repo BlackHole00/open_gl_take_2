@@ -9,6 +9,8 @@
 extern crate gl;
 use self::gl::types::*;
 
+use crate::renderer::traits::shaderTrait::ShaderTrait;
+
 use std::ffi::CString;
 use std::ptr;
 use std::str;
@@ -81,7 +83,7 @@ impl Shader {
             program_id: shader_program,
         }
     }
-
+/*
     /*  This is a simple function that binds the shader
     */
     pub fn bind(&self) {
@@ -118,5 +120,19 @@ impl Shader {
             let uniform_location = gl::GetUniformLocation(self.program_id, CString::new(uniform_name.as_bytes()).unwrap().as_ptr());
             gl::Uniform1f(uniform_location, uniform_value);
         }
+    }
+
+    pub fn set_3float_uniform(&self, uniform_name: &str, uniform_value1: f32, uniform_value2: f32, uniform_value3: f32) {
+        unsafe {
+            self.bind();
+            let uniform_location = gl::GetUniformLocation(self.program_id, CString::new(uniform_name.as_bytes()).unwrap().as_ptr());
+            gl::Uniform3f(uniform_location, uniform_value1, uniform_value2, uniform_value3);
+        }
+    }*/
+}
+
+impl ShaderTrait for Shader {
+    fn get_program_id(&self) -> u32 {
+        self.program_id
     }
 }
