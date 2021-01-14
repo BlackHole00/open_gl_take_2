@@ -7,8 +7,8 @@
 extern crate gl;
 use self::gl::types::*;
 
-use std::ffi::c_void;
-use std::mem;
+use crate::renderer::traits::eboTrait::EboTrait;
+
 
 /*  The declaration of the class.
 *   The only thing we need is the ebo id.
@@ -18,7 +18,28 @@ pub struct Ebo {
     ebo_id: GLuint,
 }
 
-#[allow(dead_code)]
+impl Ebo {
+    pub fn new() -> Ebo {
+        let mut ebo = 1;
+        unsafe {
+            gl::GenBuffers(1, &mut ebo);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
+        }
+        
+        Ebo {
+            ebo_id: ebo,
+        }
+    }
+}
+
+impl EboTrait for Ebo {
+    fn get_ebo_id(&self) -> u32 {
+        self.ebo_id
+    }
+}
+
+
+/*#[allow(dead_code)]
 impl Ebo {
     /*  The constructor of the class.
     *   It generates a ebo and saves the id.
@@ -52,4 +73,4 @@ impl Ebo {
             gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, (data_element_number * mem::size_of::<T>()) as GLsizeiptr, data_pointer, draw_mode);
         }
     }
-}
+}*/

@@ -9,8 +9,8 @@
 extern crate gl;
 use self::gl::types::*;
 
-use std::ffi::c_void;
-use std::mem;
+use crate::renderer::traits::vaoTrait::{VaoTrait, VaoLayoutTrait};
+use crate::renderer::vaoLayoutElement::VaoLayoutElement;
 
 /*  This is the declaration on the class.
 *   It contains the vao_id and a vector of VaoLayoutElements. Used for setting the vertex attrb pointers.
@@ -42,7 +42,7 @@ impl Vao{
 
     /*  This function is used to push a vao layout element in the vector.
     *   It trows an error if we exceeded the maximum number of vertex attributes.
-    */
+    *
     pub fn push_layout_element(&mut self, element_type: GLenum, normalized: GLboolean, element_count: GLint) {
         let mut nr_attributes = 1;
         unsafe {
@@ -153,7 +153,7 @@ impl Vao{
                         }
                     } as isize);
 
-                    println!("Writing layout {}: {} elements of type {}, stride: {}, offset: {} {}", i, self.layout[i].element_count, self.layout[i].element_type, stride, offset, mem::size_of::<GLfloat>());
+                    println!("Writing layout {}: {} elements of type {}, stride: {}, offset: {}", i, self.layout[i].element_count, self.layout[i].element_type, stride, offset);
                     self.bind();
                     //self.vbo.bind();
                     gl::VertexAttribPointer(i as u32, self.layout[i].element_count, self.layout[i].element_type, self.layout[i].normalized, stride as i32, offset as *const c_void);
@@ -169,20 +169,21 @@ impl Vao{
         unsafe {
             gl::BindVertexArray(self.vao_id);
         }
+    }*/
+}
+
+impl VaoTrait for Vao {
+    fn get_vao_id(&self) -> u32 {
+        self.vao_id
     }
 }
 
-/*  This Is the VaoLayoutElement class.
-*   The used flag is true if this Layout Element is used.
-*   The element type is the opengl element type
-*   The normalized flag is true if the value is normalized.
-*   The element count is how many element there are.
-*   ***what a description!***
-*/
-#[derive(Clone)]
-struct VaoLayoutElement {
-    used: bool,
-    element_type: GLenum,
-    normalized: GLboolean,
-    element_count: GLint,
+impl VaoLayoutTrait for Vao {
+    fn get_layout_ref(&self) -> &Vec::<VaoLayoutElement> {
+        &self.layout
+    }
+
+    fn get_mut_layout_ref(&mut self) -> &mut Vec::<VaoLayoutElement> {
+        &mut self.layout
+    }
 }

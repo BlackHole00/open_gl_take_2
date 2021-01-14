@@ -17,6 +17,15 @@ use std::ffi::CStr;
 
 mod renderer;
 
+use crate::renderer::traits::vboTrait::VboTrait;
+use crate::renderer::traits::vaoTrait::{VaoTrait, VaoLayoutTrait};
+use crate::renderer::traits::eboTrait::{EboTrait, OptionalEboTrait};
+use crate::renderer::traits::glObjectTrait::GlObjectTrait;
+
+use crate::renderer::vao::Vao;
+use crate::renderer::vbo::Vbo;
+use crate::renderer::ebo::Ebo;
+
 use crate::renderer::shader;
 use crate::renderer::texture;
 use crate::renderer::constants;
@@ -73,9 +82,14 @@ pub fn main() {
         2, 4, 3,
     ];
 
+    let indices2 = [
+        0, 2, 3,
+        1, 2, 4,
+    ];
+
     let shader = shader::Shader::new("./src/shaders/vert2.glsl", "./src/shaders/frag2.glsl");
 
-    let mut globj = globject::GlObject::new();
+    let mut globj = globject::GlObject::with_ebo();
     globj.add_vertex_data::<GLfloat>(vertices.len(), &vertices[0] as *const f32 as *const c_void, gl::STATIC_DRAW);
     globj.add_index_data::<GLint>(indices.len(), &indices[0] as *const i32 as *const c_void, gl::STATIC_DRAW);
     globj.push_layout_element(gl::FLOAT, gl::FALSE, 2);
@@ -83,6 +97,15 @@ pub fn main() {
     globj.set_property(constants::DRAW_MODE_PROPERTY, gl::TRIANGLES);
     globj.set_property(constants::EBO_TYPE_PROPERTY, gl::UNSIGNED_INT);
     globj.write_layout();
+
+    let mut globj2 = globject::GlObject::with_ebo();
+    globj2.add_vertex_data::<GLfloat>(vertices.len(), &vertices[0] as *const f32 as *const c_void, gl::STATIC_DRAW);
+    globj2.add_index_data::<GLint>(indices.len(), &indices2[0] as *const i32 as *const c_void, gl::STATIC_DRAW);
+    globj2.push_layout_element(gl::FLOAT, gl::FALSE, 2);
+    globj2.push_layout_element(gl::FLOAT, gl::FALSE, 2);
+    globj2.set_property(constants::DRAW_MODE_PROPERTY, gl::TRIANGLES);
+    globj2.set_property(constants::EBO_TYPE_PROPERTY, gl::UNSIGNED_INT);
+    globj2.write_layout();
 
     let mut texture1 = texture::Texture::new(gl::TEXTURE_2D, "./src/resources/wall.jpg", gl::RGB, gl::RGB, 0);
     texture1.set_gl_property(gl::TEXTURE_MAG_FILTER, gl::LINEAR);
@@ -132,7 +155,7 @@ pub fn main() {
             material.set_float_uniform("position", position);
             globj.draw(6);
             material.set_float_uniform("position", -position);
-            globj.draw(6);
+            globj2.draw(6);
         }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)

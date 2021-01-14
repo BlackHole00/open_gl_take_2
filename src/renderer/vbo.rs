@@ -7,8 +7,8 @@
 extern crate gl;
 use self::gl::types::*;
 
-use std::ffi::c_void;
-use std::mem;
+use crate::renderer::traits::vboTrait::VboTrait;
+
 
 /*  The declaration of the class.
 *   The only thing we need is the vbo id.
@@ -35,21 +35,20 @@ impl Vbo {
         }
     }
 
-    /*  A simple function to bind the buffer.
-    */
-    pub fn bind(&self) {
-        unsafe {
-            gl::BindBuffer(gl::ARRAY_BUFFER, self.vbo_id);
-        }
-    }
 
     /*  A simple function to add the data to the buffer.
-    */
+    *
     pub fn add_data<T>(&self, data_element_number: usize, data_pointer: *const c_void, draw_mode: GLenum) {
-        self.bind();
+        self.bind_vbo();
 
         unsafe {
             gl::BufferData(gl::ARRAY_BUFFER, (data_element_number * mem::size_of::<T>()) as GLsizeiptr, data_pointer, draw_mode);
         }
+    }*/
+}
+
+impl VboTrait for Vbo {
+    fn get_vbo_id(&self) -> u32 {
+        self.vbo_id
     }
 }

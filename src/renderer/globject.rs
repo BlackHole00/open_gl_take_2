@@ -9,26 +9,134 @@
 extern crate gl;
 use self::gl::types::*;
 
-use crate::renderer::vao;
-use crate::renderer::vbo;
-use crate::renderer::ebo;
-use crate::renderer::constants;
+use crate::renderer::traits::vboTrait::VboTrait;
+use crate::renderer::traits::vaoTrait::{VaoTrait, VaoLayoutTrait};
+use crate::renderer::traits::eboTrait::OptionalEboTrait;
+use crate::renderer::traits::glObjectTrait::GlObjectTrait;
 
-use std::ffi::c_void;
-use std::ptr;
+use crate::renderer::vaoLayoutElement::VaoLayoutElement;
+use crate::renderer::glObjectProperties::GlObjectProperties;
+
 
 /*  The structure definition.
 *   It contains a vao, vbo and eventually an ebo.
 *   Additionally it contains the properties of the Object.
 */
 pub struct GlObject {
-    vao: vao::Vao,
-    vbo: vbo::Vbo,
-    ebo: Option<ebo::Ebo>,
-    properties: Properties,
+    pub vao_id: GLuint,
+    layout: Vec::<VaoLayoutElement>,
+    vbo_id: GLuint,
+    ebo_id: Option<GLuint>,
+    properties: GlObjectProperties,
 }
 
-#[allow(dead_code)]
+impl GlObject {
+    pub fn new() -> GlObject {
+        GlObject {
+            vao_id: {
+                let mut vao_id = 1;
+                unsafe {
+                    gl::GenVertexArrays(1, &mut vao_id);
+                    gl::BindVertexArray(vao_id);
+                }
+
+                vao_id
+            },
+            layout: Vec::<VaoLayoutElement>::new(),
+            vbo_id: {
+                let mut vbo_id = 1;
+                unsafe {
+                    gl::GenBuffers(1, &mut vbo_id);
+                    gl::BindBuffer(gl::ARRAY_BUFFER, vbo_id);
+                }
+
+                vbo_id
+            },
+            ebo_id: None,
+            properties: GlObjectProperties {
+                draw_mode: gl::TRIANGLES,
+                ebo_type: gl::UNSIGNED_INT,
+            },
+        }
+    }
+
+    pub fn with_ebo() -> GlObject {
+        GlObject {
+            vao_id: {
+                let mut vao_id = 1;
+                unsafe {
+                    gl::GenVertexArrays(1, &mut vao_id);
+                    gl::BindVertexArray(vao_id);
+                }
+
+                vao_id
+            },
+            layout: Vec::<VaoLayoutElement>::new(),
+            vbo_id: {
+                let mut vbo_id = 1;
+                unsafe {
+                    gl::GenBuffers(1, &mut vbo_id);
+                    gl::BindBuffer(gl::ARRAY_BUFFER, vbo_id);
+                }
+
+                vbo_id
+            },
+            ebo_id: {
+                let mut ebo = 1;
+                unsafe {
+                    gl::GenBuffers(1, &mut ebo);
+                    gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
+                }
+
+                Some(ebo)
+            },
+            properties: GlObjectProperties {
+                draw_mode: gl::TRIANGLES,
+                ebo_type: gl::UNSIGNED_INT,
+            },
+        }
+    }
+}
+
+impl VboTrait for GlObject {
+    fn get_vbo_id(&self) -> u32 {
+        self.vbo_id
+    }
+}
+
+impl VaoTrait for GlObject {
+    fn get_vao_id(&self) -> u32 {
+        self.vao_id
+    }
+}
+
+impl VaoLayoutTrait for GlObject {
+    fn get_layout_ref(&self) -> &Vec::<VaoLayoutElement> {
+        &self.layout
+    }
+
+    fn get_mut_layout_ref(&mut self) -> &mut Vec::<VaoLayoutElement> {
+        &mut self.layout
+    }
+}
+
+impl OptionalEboTrait for GlObject {
+    fn get_ebo_id(&self) -> Option<u32> {
+        self.ebo_id
+    }
+}
+
+impl GlObjectTrait for GlObject {
+    fn get_properties_ref(&self) -> &GlObjectProperties {
+        &self.properties
+    }
+
+    fn get_mut_properties_ref(&mut self) -> &mut GlObjectProperties {
+        &mut self.properties
+    }
+}
+
+/*#[allow(dead_code)]
 impl GlObject {
     /*  The main constructor of the class. 
     *   We create a new vao and a new vbo.
@@ -42,7 +150,7 @@ impl GlObject {
             vao: vao::Vao::new(),
             vbo: vbo::Vbo::new(),
             ebo: None,
-            properties: Properties {
+            properties: GlObjectProperties {
                 draw_mode: gl::TRIANGLES,
                 ebo_type: gl::UNSIGNED_INT,
             },
@@ -58,7 +166,7 @@ impl GlObject {
             vao: vao.clone(),
             vbo: vbo.clone(),
             ebo: None,
-            properties: Properties {
+            properties: GlObjectProperties {
                 draw_mode: gl::TRIANGLES,
                 ebo_type: gl::UNSIGNED_INT,
             },
@@ -78,9 +186,9 @@ impl GlObject {
     *   We also need to bind the vao.
     */
     pub fn add_vertex_data<T>(&self, data_element_number: usize, data_pointer: *const c_void, draw_mode: GLenum) {
-        self.vao.bind();
-        self.vbo.bind();
-        self.vbo.add_data::<T>(data_element_number, data_pointer, draw_mode);
+        self.vao.bind_vao();
+        self.vbo.bind_vbo();
+        self.vbo.add_vbo_data::<T>(data_element_number, data_pointer, draw_mode);
     }
 
     /*  This function is similar to the add_vertex_data function.
@@ -90,14 +198,14 @@ impl GlObject {
     *   We also need to bind the vao.
     */
     pub fn add_index_data<T>(&mut self, data_element_number: usize, data_pointer: *const c_void, draw_mode: GLenum) {
-        self.vao.bind();
+        self.vao.bind_vao();
         
         if self.ebo.is_none() { //If the ebo is not set we have to set a new one!
             self.ebo = Some(ebo::Ebo::new());
         }
 
-        self.ebo.as_ref().unwrap().bind();
-        self.ebo.as_ref().unwrap().add_data::<T>(data_element_number, data_pointer, draw_mode);
+        self.ebo.as_ref().unwrap().bind_ebo();
+        self.ebo.as_ref().unwrap().add_ebo_data::<T>(data_element_number, data_pointer, draw_mode);
     }
 
     /*  This function is a link to the push_layout_element function in renderer::vao.
@@ -133,7 +241,7 @@ impl GlObject {
     *   We also need to bind the vao.
     */
     pub fn write_layout(&self) {
-        self.vbo.bind();
+        self.vbo.bind_vbo();
         self.vao.write_layout();
     }
 
@@ -157,8 +265,8 @@ impl GlObject {
     *   Note: it does not draw things by itself, but it calls raw_draw_elements() and raw_draw_arrays().
     */
     pub fn draw(&self, count: GLint) { //smart way to draw.
-        self.vao.bind();
-        self.vbo.bind();
+        self.vao.bind_vao();
+        self.vbo.bind_vbo();
 
         match self.ebo {
             Some(_) => { //We have a Element Buffer Object. We can use gl::DrawElements().
@@ -174,8 +282,8 @@ impl GlObject {
     *   It binds the vao and the vbo and then calls gl::DrawElements().
     */
     pub fn raw_draw_elements(&self, mode: GLenum, count: GLsizei, type_: GLenum) {
-        self.vao.bind();
-        self.vbo.bind();
+        self.vao.bind_vao();
+        self.vbo.bind_vbo();
         unsafe {
             gl::DrawElements(mode, count, type_, ptr::null());
         }
@@ -185,19 +293,10 @@ impl GlObject {
     *   It binds the vao and the vbo and then calls gl::DrawArrays().
     */
     pub fn raw_draw_arrays(&self, mode: GLenum, count: GLsizei) {
-        self.vao.bind();
-        self.vbo.bind();
+        self.vao.bind_vao();
+        self.vbo.bind_vbo();
         unsafe {
             gl::DrawArrays(mode, 0, count);
         }
     }
-}
-
-/*  This struct contains the properties that are used to draw.
-*   ***I should find a more modular system***
-*/
-#[derive(Clone)]
-struct Properties {
-    draw_mode: GLenum,
-    ebo_type: GLenum,
-}
+}*/
